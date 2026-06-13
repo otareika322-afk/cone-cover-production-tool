@@ -235,7 +235,7 @@ export default function App() {
     if(!m) return;
     const qty=m.qty||(manualQty?parseInt(manualQty):0);
     if(!qty) return;
-    const hasAlloc=allocData&&allocData.result.some(r=>r.canAlloc);
+    const hasAlloc=allocData&&allocData.result.every(r=>r.canAlloc);
     const baseRNeeded=m.boxQty?Math.ceil(qty/m.shots):1;
     const rNeeded=hasAlloc?Math.max(1,baseRNeeded-1):baseRNeeded;
     const csvPartNoId=hasAlloc?(orderPartNo+"(在庫有)"):orderPartNo;
@@ -511,7 +511,7 @@ export default function App() {
                       const m=masters.find(x=>x.id===orderPartNo);
                       const qty=m?.qty||(manualQty?parseInt(manualQty):0);
                       if(!qty||!m) return null;
-                      const hasAlloc=allocData&&allocData.result.some(r=>r.canAlloc);
+                      const hasAlloc=allocData&&allocData.result.every(r=>r.canAlloc);
                       const baseR=m.boxQty?Math.ceil(qty/m.shots):1;
                       const rN=hasAlloc?Math.max(1,baseR-1):baseR;
                       const res=calcScheduleDates(pickDate,rN,qty,m,selectedWorker);
