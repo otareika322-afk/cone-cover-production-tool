@@ -264,6 +264,17 @@ export default function App() {
     setSchedules(updated);
     syncToGAS("saveSchedules",updated,"ロットNo.");
   }
+  async function updateSchedDate(id, pi, val) {
+    const updated = schedules.map(s => {
+      if (s.id !== id) return s;
+      const newDates = [...s.dates];
+      newDates[pi] = val ? new Date(val) : s.dates[pi];
+      return { ...s, dates: newDates };
+    });
+    setSchedules(updated);
+    await syncToGAS("saveSchedules", updated, "工程日付");
+  }
+
   async function updateSchedStatus(id,val){
     const updated=schedules.map(s=>s.id===id?{...s,status:val}:s);
     setSchedules(updated);
@@ -575,18 +586,31 @@ export default function App() {
                       </div>
                       {expanded&&(
                         <div style={{borderTop:"1px solid #ddd",background:"#fff",padding:"10px 12px"}}>
+                          <div style={{fontSize:11,color:"#888",marginBottom:6}}>※ 日付セルをクリックして直接変更できます</div>
                           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
                             <thead><tr style={{background:"#e8eaf6"}}>
                               <th style={{...th,width:"55%"}}>工程</th>
                               <th style={{...th,textAlign:"center"}}>予定日</th>
                             </tr></thead>
                             <tbody>
-                              {PROCESSES.map((p,i)=>(
-                                <tr key={i} style={{background:i===5?"#fff9c4":i%2===0?"#fff":"#fafafa"}}>
-                                  <td style={tdc()}>{i===5?"🚚 ":""}{p}</td>
-                                  <td style={tdc({textAlign:"center",fontWeight:i===5?"bold":"normal",color:i===5?"#c62828":"inherit"})}>{fmtDate(s.dates[i])}</td>
-                                </tr>
-                              ))}
+                              {PROCESSES.map((p,i)=>{
+                                const dateVal = s.dates[i] ? new Date(s.dates[i]).toISOString().split("T")[0] : "";
+                                return (
+                                  <tr key={i} style={{background:i===5?"#fff9c4":i%2===0?"#fff":"#fafafa"}}>
+                                    <td style={tdc()}>{i===5?"🚚 ":""}{p}</td>
+                                    <td style={tdc({textAlign:"center",padding:"3px 6px"})}>
+                                      <input type="date" value={dateVal}
+                                        onChange={e=>updateSchedDate(s.id,i,e.target.value)}
+                                        style={{border:"1px solid #ddd",borderRadius:4,padding:"3px 6px",
+                                          fontSize:12,textAlign:"center",cursor:"pointer",
+                                          background:i===5?"#fff9c4":"#fff",
+                                          fontWeight:i===5?"bold":"normal",
+                                          color:i===5?"#c62828":"inherit",
+                                          width:"100%"}}/>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                           <div style={{marginTop:8,fontSize:11,color:"#555",display:"flex",gap:12,flexWrap:"wrap"}}>
