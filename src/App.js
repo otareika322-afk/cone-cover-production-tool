@@ -27,7 +27,8 @@ const SCHED_COLORS = ["#1565c0","#c62828","#2e7d32","#6a1b9a","#e65100","#00695c
 const STATUS_COLORS = { "生産中":"#e3f2fd","完了":"#e8f5e9","保留":"#fff9c4" };
 const STATUS_TEXT   = { "生産中":"#1565c0","完了":"#1b5e20","保留":"#f57f17" };
 
-const HOLIDAYS = new Set([
+// 祝日はGASから動的に読み込む（起動時にsetHolidaysで上書き）
+let HOLIDAYS = new Set([
   "2025-01-01","2025-01-13","2025-02-11","2025-02-23","2025-02-24","2025-03-20","2025-04-29","2025-05-03","2025-05-04","2025-05-05","2025-05-06","2025-07-21","2025-08-11","2025-09-15","2025-09-23","2025-10-13","2025-11-03","2025-11-23","2025-11-24",
   "2026-01-01","2026-01-12","2026-02-11","2026-02-23","2026-03-20","2026-04-29","2026-05-03","2026-05-04","2026-05-05","2026-05-06","2026-07-20","2026-08-11","2026-09-21","2026-09-22","2026-09-23","2026-10-12","2026-11-03","2026-11-23",
   "2027-01-01","2027-01-11","2027-02-11","2027-02-23","2027-03-22","2027-04-29","2027-05-03","2027-05-04","2027-05-05","2027-07-19","2027-08-11","2027-09-20","2027-09-23","2027-10-11","2027-11-03","2027-11-23",
@@ -184,13 +185,15 @@ export default function App() {
   const loadFromGAS = useCallback(async () => {
     setSyncing(true); setSyncMsg("スプレッドシートから読み込み中..."); setSyncError("");
     try {
-      const [ms,ws,inv,scheds] = await Promise.all([
-        gasGet("masters"), gasGet("workers"), gasGet("inventory"), gasGet("schedules")
+      const [ms,ws,inv,scheds,hols] = await Promise.all([
+        gasGet("masters"), gasGet("workers"), gasGet("inventory"), gasGet("schedules"), gasGet("holidays")
       ]);
       if(ms?.length)    setMasters(ms);
       if(ws?.length)    setWorkers(ws);
       if(inv?.length) { setInventory(inv); setInvNextId(Math.max(...inv.map(r=>r.id))+1); }
       if(scheds?.length){ setSchedules(scheds); setSchedNextId(Math.max(...scheds.map(s=>s.id))+1); }
+      // 祝日データをグローバル変数に反映
+      if(hols?.length) { HOLIDAYS = new Set(hols.map(h=>h.date)); }
       setGasLoaded(true);
       setSyncMsg("✅ 読み込み完了");
     } catch(e) {
