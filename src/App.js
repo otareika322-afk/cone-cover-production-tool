@@ -96,7 +96,9 @@ function calcScheduleDates(pickDate, rNeeded, qty, master, worker) {
   const posCount = master.positions.length;
   const totalMin = qty * posCount * master.minPerSheet;
   const wakka_days = Math.ceil(totalMin / worker.workMin);
-  const d0 = new Date(new Date(pickDate).getFullYear(), new Date(pickDate).getMonth(), new Date(pickDate).getDate());
+  // "YYYY-MM-DD"文字列をローカル日付として解釈（タイムゾーンずれ防止）
+  const [y,m,dd] = pickDate.split("-").map(Number);
+  const d0 = new Date(y, m-1, dd);
   const d1 = addStdDays(d0, thomsonDays);
   const d2 = addStdDays(d1, 1);
   const cuttingStart = nextWorkerDay(d2, worker);
