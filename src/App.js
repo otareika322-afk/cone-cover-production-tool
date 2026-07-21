@@ -83,12 +83,12 @@ function nextWorkerDay(dateIn, worker) {
 function fmtDate(d) {
   if(!d) return "";
   const dt=new Date(d);
-  return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,"0")}/${String(dt.getDate()).padStart(2,"0")}`;
+  return `${dt.getUTCFullYear()}/${String(dt.getUTCMonth()+1).padStart(2,"0")}/${String(dt.getUTCDate()).padStart(2,"0")}`;
 }
 function fmtDateShort(d) {
   if(!d) return "";
   const dt=new Date(d);
-  return `${dt.getMonth()+1}/${dt.getDate()}`;
+  return `${dt.getUTCMonth()+1}/${dt.getUTCDate()}`;
 }
 
 function calcScheduleDates(pickDate, rNeeded, qty, master, worker) {
