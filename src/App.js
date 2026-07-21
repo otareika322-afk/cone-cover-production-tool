@@ -117,6 +117,16 @@ function calcScheduleDates(pickDate, rNeeded, qty, master, worker) {
   return { dates:[d0,d1,d2,d3,d4,d5], thomsonDays, totalMin, wakka_days, posCount };
 }
 
+// Dateオブジェクトを"YYYY-MM-DD"（ローカル日付）に変換
+function toDateInputValue(d) {
+  if (!d) return "";
+  const dt = new Date(d);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth()+1).padStart(2,"0");
+  const dd = String(dt.getDate()).padStart(2,"0");
+  return `${y}-${m}-${dd}`;
+}
+
 function buildCSVRows(schedule, lotLines, master) {
   const shipDate = fmtDate(schedule.dates[5]);
   const rows = [];
