@@ -80,15 +80,24 @@ function nextWorkerDay(dateIn, worker) {
   while(!(worker.workDays.includes(d.getDay())&&!isHoliday(d))) d.setDate(d.getDate()+1);
   return d;
 }
+// "YYYY-MM-DD"文字列をローカル日付として解釈（タイムゾーンずれ防止）
+function parseLocalDate(str) {
+  if (!str) return null;
+  if (str instanceof Date) return str;
+  const [y,m,d] = String(str).split("-").map(Number);
+  if (!y||!m||!d) return new Date(str);
+  return new Date(y, m-1, d);
+}
+
 function fmtDate(d) {
   if(!d) return "";
   const dt=new Date(d);
-  return `${dt.getUTCFullYear()}/${String(dt.getUTCMonth()+1).padStart(2,"0")}/${String(dt.getUTCDate()).padStart(2,"0")}`;
+  return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,"0")}/${String(dt.getDate()).padStart(2,"0")}`;
 }
 function fmtDateShort(d) {
   if(!d) return "";
   const dt=new Date(d);
-  return `${dt.getUTCMonth()+1}/${dt.getUTCDate()}`;
+  return `${dt.getMonth()+1}/${dt.getDate()}`;
 }
 
 function calcScheduleDates(pickDate, rNeeded, qty, master, worker) {
@@ -193,7 +202,12 @@ export default function App() {
       if(ms?.length)    setMasters(ms);
       if(ws?.length)    setWorkers(ws);
       if(inv?.length) { setInventory(inv); setInvNextId(Math.max(...inv.map(r=>r.id))+1); }
-      if(scheds?.length){ setSchedules(scheds); setSchedNextId(Math.max(...scheds.map(s=>s.id))+1); }
+      if(scheds?.length){
+        // 日付文字列をローカルDateオブジェクトに変換
+        const parsed = scheds.map(s=>({...s, dates:(s.dates||[]).map(d=>parseLocalDate(d))}));
+        setSchedules(parsed);
+        setSchedNextId(Math.max(...parsed.map(s=>s.id))+1);
+      }
       // 祝日データをグローバル変数に反映
       if(hols?.length) { HOLIDAYS = new Set(hols.map(h=>h.date)); }
       setGasLoaded(true);
