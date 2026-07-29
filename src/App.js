@@ -131,11 +131,11 @@ function buildCSVRows(schedule, lotLines, master) {
   const shipDate = fmtDate(schedule.dates[5]);
   const rows = [];
   if(!master.boxQty) {
-    lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, schedule.qty+"セット"]));
+    lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, schedule.qty+"ｾｯﾄ"]));
     return rows;
   }
-  lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, master.boxQty+"セット"]));
-  master.endBoxes.forEach(eb => { for(let i=0;i<eb.count;i++) rows.push([master.displayId,"混載",shipDate,eb.qty+"セット"]); });
+  lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, master.boxQty+"ｾｯﾄ"]));
+  master.endBoxes.forEach(eb => { for(let i=0;i<eb.count;i++) rows.push([master.displayId,"混載",shipDate,eb.qty+"ｾｯﾄ"]); });
   return rows;
 }
 
@@ -473,7 +473,7 @@ export default function App() {
                   色: <b>{orderMaster.color}</b>　位置: <b>{orderMaster.positions.join(" ")}</b>　定番出荷数: <b>{orderMaster.qty??"出来高"}</b>　ショット数: <b>{orderMaster.shots}</b>
                 </div>}
                 <div style={{marginBottom:10}}>
-                  <label style={lbl}>受注数量（セット）</label>
+                  <label style={lbl}>受注数量（ｾｯﾄ）</label>
                   <input type="number" value={orderQty} onChange={e=>setOrderQty(e.target.value)} placeholder={orderMaster?.qty?`定番: ${orderMaster.qty}`:"数量を入力"} style={inp}/>
                 </div>
                 <div style={{marginBottom:14}}>
@@ -491,7 +491,7 @@ export default function App() {
               <div style={card}>
                 <h4 style={{margin:"0 0 4px",color:"#283593"}}>在庫引当確認</h4>
                 <div style={{fontSize:12,color:"#555",marginBottom:10}}>
-                  品番: <b>{orderPartNo}</b>　受注数: <b>{orderQty}セット</b>　引当条件: 在庫 ≥ <b>{orderMaster?.shots}</b>
+                  品番: <b>{orderPartNo}</b>　受注数: <b>{orderQty}ｾｯﾄ</b>　引当条件: 在庫 ≥ <b>{orderMaster?.shots}</b>
                 </div>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:12}}>
                   <thead><tr>
@@ -510,7 +510,7 @@ export default function App() {
                   </tbody>
                 </table>
                 {allocData.maxShortage>0
-                  ?<div style={{background:"#fff3e0",border:"1px solid #ffb74d",borderRadius:6,padding:"8px 12px",marginBottom:12,fontSize:12}}>⚠️ 不足数: <b style={{color:"#c62828"}}>{allocData.maxShortage}セット</b> → 新規生産が必要</div>
+                  ?<div style={{background:"#fff3e0",border:"1px solid #ffb74d",borderRadius:6,padding:"8px 12px",marginBottom:12,fontSize:12}}>⚠️ 不足数: <b style={{color:"#c62828"}}>{allocData.maxShortage}ｾｯﾄ</b> → 新規生産が必要</div>
                   :<div style={{background:"#e8f5e9",border:"1px solid #81c784",borderRadius:6,padding:"8px 12px",marginBottom:12,fontSize:12}}>✅ 在庫で充足可 — 新規生産不要</div>
                 }
                 <div style={{display:"flex",gap:8}}>
@@ -529,11 +529,11 @@ export default function App() {
                   :<div style={card}>
                     <h4 style={{margin:"0 0 4px",color:"#283593"}}>スケジュール生成</h4>
                     <div style={{background:"#e8eaf6",borderRadius:6,padding:"8px 12px",marginBottom:12,fontSize:12}}>
-                      品番: <b>{orderPartNo}</b>　生産数: <b style={{color:"#c62828"}}>{orderMaster?.qty||"?"}セット</b>
+                      品番: <b>{orderPartNo}</b>　生産数: <b style={{color:"#c62828"}}>{orderMaster?.qty||"?"}ｾｯﾄ</b>
                     </div>
                     {orderMaster?.qty===null&&(
                       <div style={{marginBottom:10}}>
-                        <label style={lbl}>生産数量（セット）</label>
+                        <label style={lbl}>生産数量（ｾｯﾄ）</label>
                         <input type="number" value={manualQty} onChange={e=>setManualQty(e.target.value)} style={inp} placeholder="数量を入力"/>
                       </div>
                     )}
@@ -585,7 +585,7 @@ export default function App() {
                             <span style={{fontWeight:"bold",fontSize:13,color:"#1a237e"}}>{s.partNo}</span>
                             <span style={{fontSize:11,background:STATUS_COLORS[s.status],color:STATUS_TEXT[s.status],border:`1px solid ${STATUS_TEXT[s.status]}`,borderRadius:4,padding:"1px 6px"}}>{s.status}</span>
                             <span style={{fontSize:11,color:"#555"}}>作業者: <b>{s.worker}</b></span>
-                            <span style={{fontSize:11,color:"#555"}}>{s.qty}セット</span>
+                            <span style={{fontSize:11,color:"#555"}}>{s.qty}ｾｯﾄ</span>
                           </div>
                           <div style={{display:"flex",gap:4,flexShrink:0}}>
                             <button onClick={()=>setSchedules(prev=>prev.map(x=>x.id===s.id?{...x,expanded:!expanded}:x))}
@@ -686,7 +686,7 @@ export default function App() {
                       <div style={card}>
                         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:14}}>
                           <tbody>
-                            {[["品番",m?.displayId],["出荷日",fmtDate(activeSchedule.dates[5])],["数量",activeSchedule.qty+" セット"],["必要原反数",rNeeded?rNeeded+"R":"—"],["箱入り数",m?.boxQty??"—"]].map(([k,v],i)=>(
+                            {[["品番",m?.displayId],["出荷日",fmtDate(activeSchedule.dates[5])],["数量",activeSchedule.qty+" ｾｯﾄ"],["必要原反数",rNeeded?rNeeded+"R":"—"],["箱入り数",m?.boxQty??"—"]].map(([k,v],i)=>(
                               <tr key={i} style={{background:i%2===0?"#e8eaf6":"#fff"}}>
                                 <td style={tdc({fontWeight:"bold",width:"40%"})}>{k}</td>
                                 <td style={tdc({color:k==="出荷日"?"#c62828":"inherit",fontWeight:k==="出荷日"?"bold":"normal"})}>{v}</td>
@@ -919,7 +919,7 @@ export default function App() {
                       </div>
                     ))}
                   </div>
-                  {m.endBoxes.length>0&&<div style={{marginTop:8,fontSize:11,color:"#555"}}>端数箱: {m.endBoxes.map(eb=>`${eb.qty}セット×${eb.count}箱`).join("　＋　")}</div>}
+                  {m.endBoxes.length>0&&<div style={{marginTop:8,fontSize:11,color:"#555"}}>端数箱: {m.endBoxes.map(eb=>`${eb.qty}ｾｯﾄ×${eb.count}箱`).join("　＋　")}</div>}
                 </div>
               );
             })}
