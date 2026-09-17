@@ -131,11 +131,11 @@ function buildCSVRows(schedule, lotLines, master) {
   const shipDate = fmtDate(schedule.dates[5]);
   const rows = [];
   if(!master.boxQty) {
-    lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, schedule.qty+"ｾｯﾄ"]));
+    lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, schedule.qty+"セット"]));
     return rows;
   }
-  lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, master.boxQty+"ｾｯﾄ"]));
-  master.endBoxes.forEach(eb => { for(let i=0;i<eb.count;i++) rows.push([master.displayId,"混載",shipDate,eb.qty+"ｾｯﾄ"]); });
+  lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, master.boxQty+"セット"]));
+  master.endBoxes.forEach(eb => { for(let i=0;i<eb.count;i++) rows.push([master.displayId,"混載",shipDate,eb.qty+"セット"]); });
   return rows;
 }
 
@@ -160,6 +160,7 @@ export default function App() {
   const [schedules,setSchedules]=useState([]);
   const [schedNextId,setSchedNextId]=useState(1);
   const [activeSchedId,setActiveSchedId]=useState(null);
+  const [archive,setArchive]=useState([]);
   const [syncing,setSyncing]=useState(false);
   const [syncMsg,setSyncMsg]=useState("");
   const [syncError,setSyncError]=useState("");
@@ -206,8 +207,8 @@ export default function App() {
   const loadFromGAS = useCallback(async () => {
     setSyncing(true); setSyncMsg("スプレッドシートから読み込み中..."); setSyncError("");
     try {
-      const [ms,ws,inv,scheds,hols] = await Promise.all([
-        gasGet("masters"), gasGet("workers"), gasGet("inventory"), gasGet("schedules"), gasGet("holidays")
+      const [ms,ws,inv,scheds,hols,arch] = await Promise.all([
+        gasGet("masters"), gasGet("workers"), gasGet("inventory"), gasGet("schedules"), gasGet("holidays"), gasGet("archive")
       ]);
       if(ms?.length)    setMasters(ms);
       if(ws?.length)    setWorkers(ws);
@@ -220,6 +221,9 @@ export default function App() {
       }
       // 祝日データをグローバル変数に反映
       if(hols?.length) { HOLIDAYS = new Set(hols.map(h=>h.date)); }
+      if(arch?.length) {
+        setArchive(arch.map(s=>({...s, dates:(s.dates||[]).map(d=>parseLocalDate(d))})));
+      }
       setGasLoaded(true);
       setSyncMsg("✅ 読み込み完了");
     } catch(e) {
@@ -316,6 +320,26 @@ export default function App() {
     await syncToGAS("saveSchedules",updated,"スケジュール削除");
   }
 
+  // 実績として保存し、スケジュール一覧からは削除する
+  async function archiveSched(id){
+    const target=schedules.find(s=>s.id===id);
+    if(!target) return;
+    const remaining=schedules.filter(s=>s.id!==id);
+    setSyncing(true); setSyncMsg("実績として保存中..."); setSyncError("");
+    try{
+      await gasPost("archiveSchedule",{id, remainingSchedules:remaining});
+      setSchedules(remaining);
+      setArchive(prev=>[{...target, archivedAt:new Date().toLocaleDateString("ja-JP")},...prev]);
+      if(activeSchedId===id) setActiveSchedId(null);
+      setSyncMsg("✅ 実績として保存しました");
+    }catch(e){
+      setSyncError("❌ 保存失敗: "+e.message);
+    }finally{
+      setSyncing(false);
+      setTimeout(()=>setSyncMsg(""),3000);
+    }
+  }
+
   function downloadCSV(sched){
     const m=masters.find(x=>x.id===(sched.csvPartNo||sched.partNo));
     const lines=sched.lotInput.split(/\n/).map(l=>l.trim()).filter(l=>l.length>0);
@@ -387,7 +411,7 @@ export default function App() {
     return map;
   }
 
-  const tabs=["📅 生産スケジュール","📄 ロット・CSV","📦 仕掛在庫","📆 カレンダー","⚙️ 品番マスタ","👷 作業者マスタ"];
+  const tabs=["📅 生産スケジュール","📄 ロット・CSV","📦 仕掛在庫","📆 カレンダー","🗄️ 生産実績","⚙️ 品番マスタ","👷 作業者マスタ"];
   const wizSteps=[{key:"input",label:"① 品番・数量"},{key:"alloc",label:"② 在庫引当"},{key:"schedule",label:"③ スケジュール"}];
 
   const WorkdayToggle=({buf,setBuf})=>(
@@ -473,7 +497,7 @@ export default function App() {
                   色: <b>{orderMaster.color}</b>　位置: <b>{orderMaster.positions.join(" ")}</b>　定番出荷数: <b>{orderMaster.qty??"出来高"}</b>　ショット数: <b>{orderMaster.shots}</b>
                 </div>}
                 <div style={{marginBottom:10}}>
-                  <label style={lbl}>受注数量（ｾｯﾄ）</label>
+                  <label style={lbl}>受注数量（セット）</label>
                   <input type="number" value={orderQty} onChange={e=>setOrderQty(e.target.value)} placeholder={orderMaster?.qty?`定番: ${orderMaster.qty}`:"数量を入力"} style={inp}/>
                 </div>
                 <div style={{marginBottom:14}}>
@@ -491,7 +515,7 @@ export default function App() {
               <div style={card}>
                 <h4 style={{margin:"0 0 4px",color:"#283593"}}>在庫引当確認</h4>
                 <div style={{fontSize:12,color:"#555",marginBottom:10}}>
-                  品番: <b>{orderPartNo}</b>　受注数: <b>{orderQty}ｾｯﾄ</b>　引当条件: 在庫 ≥ <b>{orderMaster?.shots}</b>
+                  品番: <b>{orderPartNo}</b>　受注数: <b>{orderQty}セット</b>　引当条件: 在庫 ≥ <b>{orderMaster?.shots}</b>
                 </div>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:12}}>
                   <thead><tr>
@@ -510,7 +534,7 @@ export default function App() {
                   </tbody>
                 </table>
                 {allocData.maxShortage>0
-                  ?<div style={{background:"#fff3e0",border:"1px solid #ffb74d",borderRadius:6,padding:"8px 12px",marginBottom:12,fontSize:12}}>⚠️ 不足数: <b style={{color:"#c62828"}}>{allocData.maxShortage}ｾｯﾄ</b> → 新規生産が必要</div>
+                  ?<div style={{background:"#fff3e0",border:"1px solid #ffb74d",borderRadius:6,padding:"8px 12px",marginBottom:12,fontSize:12}}>⚠️ 不足数: <b style={{color:"#c62828"}}>{allocData.maxShortage}セット</b> → 新規生産が必要</div>
                   :<div style={{background:"#e8f5e9",border:"1px solid #81c784",borderRadius:6,padding:"8px 12px",marginBottom:12,fontSize:12}}>✅ 在庫で充足可 — 新規生産不要</div>
                 }
                 <div style={{display:"flex",gap:8}}>
@@ -529,11 +553,11 @@ export default function App() {
                   :<div style={card}>
                     <h4 style={{margin:"0 0 4px",color:"#283593"}}>スケジュール生成</h4>
                     <div style={{background:"#e8eaf6",borderRadius:6,padding:"8px 12px",marginBottom:12,fontSize:12}}>
-                      品番: <b>{orderPartNo}</b>　生産数: <b style={{color:"#c62828"}}>{orderMaster?.qty||"?"}ｾｯﾄ</b>
+                      品番: <b>{orderPartNo}</b>　生産数: <b style={{color:"#c62828"}}>{orderMaster?.qty||"?"}セット</b>
                     </div>
                     {orderMaster?.qty===null&&(
                       <div style={{marginBottom:10}}>
-                        <label style={lbl}>生産数量（ｾｯﾄ）</label>
+                        <label style={lbl}>生産数量（セット）</label>
                         <input type="number" value={manualQty} onChange={e=>setManualQty(e.target.value)} style={inp} placeholder="数量を入力"/>
                       </div>
                     )}
@@ -585,7 +609,7 @@ export default function App() {
                             <span style={{fontWeight:"bold",fontSize:13,color:"#1a237e"}}>{s.partNo}</span>
                             <span style={{fontSize:11,background:STATUS_COLORS[s.status],color:STATUS_TEXT[s.status],border:`1px solid ${STATUS_TEXT[s.status]}`,borderRadius:4,padding:"1px 6px"}}>{s.status}</span>
                             <span style={{fontSize:11,color:"#555"}}>作業者: <b>{s.worker}</b></span>
-                            <span style={{fontSize:11,color:"#555"}}>{s.qty}ｾｯﾄ</span>
+                            <span style={{fontSize:11,color:"#555"}}>{s.qty}セット</span>
                           </div>
                           <div style={{display:"flex",gap:4,flexShrink:0}}>
                             <button onClick={()=>setSchedules(prev=>prev.map(x=>x.id===s.id?{...x,expanded:!expanded}:x))}
@@ -594,6 +618,10 @@ export default function App() {
                             </button>
                             <button onClick={()=>{setActiveSchedId(s.id);setTab(1);}}
                               style={{padding:"3px 8px",background:"#e65100",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:11}}>CSV</button>
+                            {s.status==="完了"&&(
+                              <button onClick={()=>archiveSched(s.id)}
+                                style={{padding:"3px 8px",background:"#1b5e20",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:11}}>📦 実績保存</button>
+                            )}
                             <button onClick={()=>deleteSched(s.id)}
                               style={{padding:"3px 8px",background:"#ffebee",color:"#c62828",border:"none",borderRadius:4,cursor:"pointer",fontSize:11}}>削除</button>
                           </div>
@@ -686,7 +714,7 @@ export default function App() {
                       <div style={card}>
                         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:14}}>
                           <tbody>
-                            {[["品番",m?.displayId],["出荷日",fmtDate(activeSchedule.dates[5])],["数量",activeSchedule.qty+" ｾｯﾄ"],["必要原反数",rNeeded?rNeeded+"R":"—"],["箱入り数",m?.boxQty??"—"]].map(([k,v],i)=>(
+                            {[["品番",m?.displayId],["出荷日",fmtDate(activeSchedule.dates[5])],["数量",activeSchedule.qty+" セット"],["必要原反数",rNeeded?rNeeded+"R":"—"],["箱入り数",m?.boxQty??"—"]].map(([k,v],i)=>(
                               <tr key={i} style={{background:i%2===0?"#e8eaf6":"#fff"}}>
                                 <td style={tdc({fontWeight:"bold",width:"40%"})}>{k}</td>
                                 <td style={tdc({color:k==="出荷日"?"#c62828":"inherit",fontWeight:k==="出荷日"?"bold":"normal"})}>{v}</td>
@@ -885,8 +913,66 @@ export default function App() {
           );
         })()}
 
-        {/* TAB 4 品番マスタ */}
+        {/* TAB 4 生産実績 */}
         {tab===4&&(
+          <div>
+            <h3 style={{margin:"0 0 12px",color:"#1a237e"}}>🗄️ 生産実績</h3>
+            {archive.length===0
+              ? <div style={{color:"#888",padding:20}}>まだ実績データがありません。生産スケジュール一覧で「完了」ステータスにすると「📦 実績保存」ボタンが表示されます。</div>
+              : archive.map(s=>{
+                  const expanded=s.expanded||false;
+                  return (
+                    <div key={s.id} style={{background:"#f5f6fa",border:"1px solid #ddd",borderRadius:8,marginBottom:10,overflow:"hidden"}}>
+                      <div style={{padding:"10px 12px"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                            <span style={{fontWeight:"bold",fontSize:13,color:"#1a237e"}}>{s.partNo}</span>
+                            <span style={{fontSize:11,background:"#e8f5e9",color:"#1b5e20",border:"1px solid #1b5e20",borderRadius:4,padding:"1px 6px"}}>完了</span>
+                            <span style={{fontSize:11,color:"#555"}}>作業者: <b>{s.worker}</b></span>
+                            <span style={{fontSize:11,color:"#555"}}>{s.qty}セット</span>
+                          </div>
+                          <button onClick={()=>setArchive(prev=>prev.map(x=>x.id===s.id?{...x,expanded:!expanded}:x))}
+                            style={{padding:"3px 8px",background:"#e8eaf6",color:"#283593",border:"none",borderRadius:4,cursor:"pointer",fontSize:11}}>
+                            {expanded?"▲ 閉じる":"▼ 詳細"}
+                          </button>
+                        </div>
+                        <div style={{fontSize:11,color:"#555",display:"flex",flexWrap:"wrap",gap:10}}>
+                          <span>🚚 出荷: <b>{fmtDate(s.dates[5])}</b></span>
+                          <span>アーカイブ日: {s.archivedAt}</span>
+                        </div>
+                      </div>
+                      {expanded&&(
+                        <div style={{borderTop:"1px solid #ddd",background:"#fff",padding:"10px 12px"}}>
+                          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                            <thead><tr style={{background:"#e8eaf6"}}>
+                              <th style={{...th,width:"55%"}}>工程</th>
+                              <th style={{...th,textAlign:"center"}}>実績日</th>
+                            </tr></thead>
+                            <tbody>
+                              {PROCESSES.map((p,i)=>(
+                                <tr key={i} style={{background:i===5?"#fff9c4":i%2===0?"#fff":"#fafafa"}}>
+                                  <td style={tdc()}>{i===5?"🚚 ":""}{p}</td>
+                                  <td style={tdc({textAlign:"center",fontWeight:i===5?"bold":"normal",color:i===5?"#c62828":"inherit"})}>{fmtDate(s.dates[i])}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          <div style={{marginTop:8,fontSize:11,color:"#555",display:"flex",gap:12,flexWrap:"wrap"}}>
+                            <span>トムソン: <b>{s.thomsonDays}日</b>（{s.rNeeded}R）</span>
+                            <span>わっか加工: <b>{Number(s.totalMin)?.toFixed(0)}分 → {s.wakka_days}稼働日</b></span>
+                            <span>ロットNo.: {s.lotInput?s.lotInput.split(/\n/).filter(l=>l.trim()).length+"件":"—"}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+            }
+          </div>
+        )}
+
+        {/* TAB 5 品番マスタ */}
+        {tab===5&&(
           <div>
             <h3 style={{margin:"0 0 12px",color:"#1a237e"}}>品番マスタ管理</h3>
             {masters.map(m=>{
@@ -919,15 +1005,15 @@ export default function App() {
                       </div>
                     ))}
                   </div>
-                  {m.endBoxes.length>0&&<div style={{marginTop:8,fontSize:11,color:"#555"}}>端数箱: {m.endBoxes.map(eb=>`${eb.qty}ｾｯﾄ×${eb.count}箱`).join("　＋　")}</div>}
+                  {m.endBoxes.length>0&&<div style={{marginTop:8,fontSize:11,color:"#555"}}>端数箱: {m.endBoxes.map(eb=>`${eb.qty}セット×${eb.count}箱`).join("　＋　")}</div>}
                 </div>
               );
             })}
           </div>
         )}
 
-        {/* TAB 5 作業者マスタ */}
-        {tab===5&&(
+        {/* TAB 6 作業者マスタ */}
+        {tab===6&&(
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
               <h3 style={{margin:0,color:"#1a237e"}}>👷 作業者マスタ</h3>
