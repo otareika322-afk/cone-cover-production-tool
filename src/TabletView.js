@@ -48,7 +48,7 @@ export default function TabletView() {
   const [workers, setWorkers] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [masters, setMasters] = useState([]);
-  const [glueNotes, setGlueNotes] = useState([]);
+
   const [blades, setBlades] = useState([]);
   const [dailyLogs, setDailyLogs] = useState([]);
   const [selectedWorkerId, setSelectedWorkerId] = useState(null);
@@ -62,9 +62,9 @@ export default function TabletView() {
   const loadAll = useCallback(async () => {
     setLoading(true); setErr("");
     try {
-      const [ws, scheds, bl, logs, ms, gn] = await Promise.all([
+      const [ws, scheds, bl, logs, ms] = await Promise.all([
         gasGet("workers"), gasGet("schedules"), gasGet("blades"),
-        gasGet("dailyLogs"), gasGet("masters"), gasGet("glueNotes"),
+        gasGet("dailyLogs"), gasGet("masters"),
       ]);
       setWorkers(ws || []);
       setSelectedWorkerId(prev => prev ?? (ws && ws[0] ? ws[0].id : null));
@@ -72,7 +72,6 @@ export default function TabletView() {
       setBlades(bl || []);
       setDailyLogs(logs || []);
       setMasters(ms || []);
-      setGlueNotes(gn || []);
     } catch (e) {
       setErr("読み込みに失敗しました: " + e.message);
     } finally {
@@ -93,8 +92,18 @@ export default function TabletView() {
     const start = s.dates[2], end = s.dates[3];
     if (!start || !end) return false;
     const startKey = toDateInputValue(start), endKey = toDateInputValue(end);
-    return startKey <= todayKey && todayKey >= startKey && endKey >= todayKey;
+    return startKey <= todayKey && endKey >= todayKey;
   });
+
+  // カット開始がまだ先の予定(スケジュールが組まれた時点でタブレットに見えるようにする)
+  const upcomingTasks = schedules.filter(s => {
+    if (s.status !== "生産中") return false;
+    if (selectedWorker && s.worker !== selectedWorker.name) return false;
+    if (completedIds.has(s.id)) return false;
+    const start = s.dates[2];
+    if (!start) return false;
+    return toDateInputValue(start) > todayKey;
+  }).sort((a, b) => a.dates[2] - b.dates[2]);
 
   const todaysLogs = dailyLogs.filter(l => l.date === todayKey && l.status !== "完了").sort((a, b) => b.id - a.id);
   const blade = blades[0] || null;
@@ -237,7 +246,7 @@ export default function TabletView() {
           {visibleTasks.map(s => {
             const master = masters.find(m => m.id === s.partNo || m.displayId === s.partNo);
             const { box, endBox } = formatBoxInfo(master);
-            const glue = glueNotes.find(g => g.partNo === s.partNo);
+
             const sum = summaryForTask(s);
             const lots = usedLotsFor(s.id);
             const total = s.rNeeded || 0;
@@ -255,7 +264,7 @@ export default function TabletView() {
                   <div>カット締切：<b style={{ color: "#222" }}>{fmtShort(s.dates[3])}</b></div>
                   <div>箱入り数：{box}</div>
                   <div>端数箱：{endBox}</div>
-                  <div>のりしろ：{glue ? glue.note : "-"}</div>
+                  <div>のりしろ：{master?.glueNote || "-"}</div>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(90px, 1fr))`, gap: 6, marginTop: 8 }}>

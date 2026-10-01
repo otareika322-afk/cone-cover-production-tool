@@ -1,22 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-
-// ============================================================
-// GAS API
-// ============================================================
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzpCyqWlsaU_2LaO6DckKYoLq4WolHUHvxsCmzW3uHvyzpU2wF6pRae65WihjNEuOcI/exec";
-
-async function gasGet(type) {
-  const res = await fetch(`${GAS_URL}?type=${type}`);
-  const json = await res.json();
-  if (json.status !== "ok") throw new Error(json.message);
-  return json.data;
-}
-async function gasPost(action, payload) {
-  const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action, payload }) });
-  const json = await res.json();
-  if (json.status !== "ok") throw new Error(json.message);
-  return json;
-}
+import { gasGet, gasPost } from "./api";
 
 // ============================================================
 // 定数
@@ -998,6 +981,7 @@ export default function App() {
                       ["箱入り数",isEditing?<input type="number" value={buf.boxQty??""} placeholder="なし" onChange={e=>setEditBuf(b=>({...b,boxQty:e.target.value===''?null:parseInt(e.target.value)}))} style={{width:"100%",fontSize:11}}/>:(m.boxQty??"—")],
                       ["作業時間(分/枚)",isEditing?<input type="number" step="0.001" value={buf.minPerSheet} onChange={e=>setEditBuf(b=>({...b,minPerSheet:parseFloat(e.target.value)||0}))} style={{width:"100%",fontSize:11}}/>:m.minPerSheet],
                       ["在庫管理",isEditing?<select value={buf.manageStock?"する":"しない"} onChange={e=>setEditBuf(b=>({...b,manageStock:e.target.value==="する"}))} style={{width:"100%",fontSize:11}}><option>する</option><option>しない</option></select>:(m.manageStock?"する":"しない")],
+                      ["のりしろ備考",isEditing?<input type="text" value={buf.glueNote||""} placeholder="例：④のりしろ35mm" onChange={e=>setEditBuf(b=>({...b,glueNote:e.target.value}))} style={{width:"100%",fontSize:11}}/>:(m.glueNote||"—")],
                     ].map(([k,v],i)=>(
                       <div key={i} style={{background:"#f5f6fa",borderRadius:4,padding:"6px 8px"}}>
                         <div style={{color:"#888",fontSize:10,marginBottom:2}}>{k}</div>
