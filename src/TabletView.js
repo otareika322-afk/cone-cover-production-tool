@@ -337,6 +337,27 @@ export default function TabletView() {
               </div>
             );
           })}
+
+          {upcomingTasks.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: "bold", color: "#1a237e", marginBottom: 10 }}>
+                今後の予定（{upcomingTasks.length}件）
+              </div>
+              <div style={card}>
+                {upcomingTasks.map(s => (
+                  <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #eee", fontSize: 13, gap: 8, flexWrap: "wrap" }}>
+                    <div>
+                      <b style={{ color: "#1a237e" }}>{s.partNo}</b>
+                      <span style={{ color: "#666", marginLeft: 8 }}>色:{s.color} 位置:{s.positions.join(" ")} 数量:{s.qty}</span>
+                    </div>
+                    <div style={{ color: "#666", whiteSpace: "nowrap" }}>
+                      材料入荷 {fmtShort(s.dates[2])} 〜 カット締切 {fmtShort(s.dates[3])}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
