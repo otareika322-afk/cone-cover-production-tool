@@ -146,7 +146,7 @@ export default function TabletView() {
         id: Date.now(), date: todayKey, scheduleId: s.id,
         worker: selectedWorker ? selectedWorker.name : "", partNo: s.partNo,
         lot: form.lot, start: form.start, end, qty, ng, ngNote: form.ngNote || "",
-        remain, pos: form.pos, status: "完了", bladeId: blade ? blade.id : null,
+        remain, pos: form.pos, status: "作業中", bladeId: blade ? blade.id : null,
       });
       setOpenTaskId(null);
       flash("✅ 完了報告を記録しました");
@@ -177,7 +177,7 @@ export default function TabletView() {
     if (!blade) return;
     setBusy(true); setErr("");
     try {
-      await gasPost("reportBladeIssue", { bladeId: blade.id });
+      await gasPost("reportBladeIssue", { bladeId: blade.id, worker: selectedWorker ? selectedWorker.name : "" });
       flash("刃の交換申告を送信しました");
       await loadAll();
     } catch (e) {
