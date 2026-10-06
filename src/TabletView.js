@@ -117,6 +117,13 @@ export default function TabletView() {
     return [...set];
   }
 
+  // ロット候補 = 管理者がスケジュール画面で入力済みのロット(lotInput) + 作業者がこれまで入力したロット
+  function lotCandidatesFor(s) {
+    const fromAdmin = (s.lotInput || "").split("\n").map(x => x.trim()).filter(Boolean);
+    const fromWorker = usedLotsFor(s.id);
+    return [...new Set([...fromAdmin, ...fromWorker])];
+  }
+
   function summaryForTask(s) {
     const box = {};
     s.positions.forEach(p => (box[p] = { remain: null, ng: 0 }));
@@ -208,6 +215,7 @@ export default function TabletView() {
   const card = { background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 4px #0002", marginBottom: 14 };
   const bigBtn = (bg, color = "#fff") => ({ padding: "12px 18px", background: bg, color, border: "none", borderRadius: 10, fontSize: 15, fontWeight: "bold", cursor: "pointer" });
   const input = { width: "100%", fontSize: 15, padding: "9px 11px", border: "1px solid #ccc", borderRadius: 8 };
+  const inputNarrow = { ...input, width: "auto", maxWidth: 150 };
   const fieldLabel = { display: "block", fontSize: 12, color: "#666", fontWeight: "bold", marginBottom: 4 };
 
   if (loading) return <div style={{ ...wrap, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>読み込み中...</div>;
@@ -297,10 +305,10 @@ export default function TabletView() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                       <div>
                         <label style={fieldLabel}>ロットNo.(この注文の現品票と連携)</label>
-                        <input style={input} list={`lots-${s.id}`} value={form.lot || ""} placeholder="例：N08PW4880"
+                        <input style={inputNarrow} list={`lots-${s.id}`} value={form.lot || ""} placeholder="例：N08PW4880"
                           onChange={e => setForm(f => ({ ...f, lot: e.target.value }))} />
                         <datalist id={`lots-${s.id}`}>
-                          {lots.map(l => <option key={l} value={l} />)}
+                          {lotCandidatesFor(s).map(l => <option key={l} value={l} />)}
                         </datalist>
                       </div>
                       <div>
@@ -317,12 +325,12 @@ export default function TabletView() {
                       </div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                      <div><label style={fieldLabel}>開始時刻</label><input type="time" style={input} value={form.start || ""} onChange={e => setForm(f => ({ ...f, start: e.target.value }))} /></div>
-                      <div><label style={fieldLabel}>終了時刻</label><input type="time" style={input} value={form.end || ""} onChange={e => setForm(f => ({ ...f, end: e.target.value }))} /></div>
+                      <div><label style={fieldLabel}>開始時刻</label><input type="time" style={inputNarrow} value={form.start || ""} onChange={e => setForm(f => ({ ...f, start: e.target.value }))} /></div>
+                      <div><label style={fieldLabel}>終了時刻</label><input type="time" style={inputNarrow} value={form.end || ""} onChange={e => setForm(f => ({ ...f, end: e.target.value }))} /></div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                      <div><label style={fieldLabel}>加工個数</label><input type="number" inputMode="numeric" style={input} value={form.qty || ""} placeholder="0" onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} /></div>
-                      <div><label style={fieldLabel}>未加工(残数・現物カウント)</label><input type="number" inputMode="numeric" style={input} value={form.remain || ""} placeholder="0" onChange={e => setForm(f => ({ ...f, remain: e.target.value }))} /></div>
+                      <div><label style={fieldLabel}>加工個数</label><input type="number" inputMode="numeric" style={inputNarrow} value={form.qty || ""} placeholder="0" onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} /></div>
+                      <div><label style={fieldLabel}>未加工(残数・現物カウント)</label><input type="number" inputMode="numeric" style={inputNarrow} value={form.remain || ""} placeholder="0" onChange={e => setForm(f => ({ ...f, remain: e.target.value }))} /></div>
                     </div>
                     <div style={{ marginBottom: 12 }}>
                       <label style={fieldLabel}>不良数・不良内容</label>
