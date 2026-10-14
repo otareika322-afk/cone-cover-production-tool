@@ -131,11 +131,11 @@ function buildCSVRows(schedule, lotLines, master) {
   const shipDate = fmtDate(schedule.dates[5]);
   const rows = [];
   if(!master.boxQty) {
-    lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, schedule.qty+"セット"]));
+    lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, schedule.qty+"ｾｯﾄ"]));
     return rows;
   }
-  lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, master.boxQty+"セット"]));
-  master.endBoxes.forEach(eb => { for(let i=0;i<eb.count;i++) rows.push([master.displayId,"混載",shipDate,eb.qty+"セット"]); });
+  lotLines.forEach(lot => rows.push([master.displayId, lot.trim(), shipDate, master.boxQty+"ｾｯﾄ"]));
+  master.endBoxes.forEach(eb => { for(let i=0;i<eb.count;i++) rows.push([master.displayId,"混載",shipDate,eb.qty+"ｾｯﾄ"]); });
   return rows;
 }
 
