@@ -91,8 +91,8 @@ export default function TabletView() {
     if (completedIds.has(s.id)) return false;
     const start = s.dates[2], end = s.dates[3];
     if (!start || !end) return false;
-    const startKey = toDateInputValue(start), endKey = toDateInputValue(end);
-    return startKey <= todayKey && endKey >= todayKey;
+    // 材料入荷日以降は、「この注文を完了にする」を押すまで(カット締切を過ぎても)一覧に残す
+    return toDateInputValue(start) <= todayKey;
   });
 
   // カット開始がまだ先の予定(スケジュールが組まれた時点でタブレットに見えるようにする)
@@ -269,7 +269,7 @@ export default function TabletView() {
                 </div>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 12, color: "#666", marginTop: 4 }}>
                   <div>材料入荷日：<b style={{ color: "#222" }}>{fmtShort(s.dates[2])}</b></div>
-                  <div>カット締切：<b style={{ color: "#222" }}>{fmtShort(s.dates[3])}</b></div>
+                  <div>カット締切：<b style={{ color: "#222" }}>{fmtShort(s.dates[3])}</b>{toDateInputValue(s.dates[3]) < todayKey ? "（締切超過）" : ""}</div>
                   <div>箱入り数：{box}</div>
                   <div>端数箱：{endBox}</div>
                   <div>のりしろ：{master?.glueNote || "-"}</div>
